@@ -42,7 +42,12 @@ internal class Program
     using CancellationTokenSource cts = new();
     Task receiveLoopTask = ReceiveLoop(client, cts.Token);
 
+    Console.Clear();
     Console.WriteLine($"=== С подключением {userName} ===");
+
+    string joinMsg = $"JOIN:{userName}";
+    byte[] joinBytes = Encoding.UTF8.GetBytes(joinMsg);
+    await client.SendAsync(joinBytes, joinBytes.Length, serverEP);
 
     while (true)
     {
@@ -58,6 +63,7 @@ internal class Program
       try
       {
         await client.SendAsync(bytes, bytes.Length, serverEP);
+        PrintSentMessage($"U: {message}");
       }
       catch (Exception ex) { Console.WriteLine($"Ошибка: {ex.Message}"); }
     }
@@ -75,16 +81,42 @@ internal class Program
         UdpReceiveResult receivedData = await client.ReceiveAsync(ct);
         string message = Encoding.UTF8.GetString(receivedData.Buffer);
 
-        if (message == "SERVER_HERE" || message == "DISCOVER") continue;
+        if (message == "SERVER_HERE" || message == "DISCOVER" || message.StartsWith("JOIN:")) continue;
 
-        lock (ConsoleLock)
-        {
-          Console.WriteLine($"\n[{DateTime.Now:HH:mm:ss}] {message}");
-          Console.Write("> ");
-        }
+        PrintReceivedMessage(message);
       }
     }
     catch (OperationCanceledException) { }
     catch (Exception ex) { Console.WriteLine($"Ошибка приема: {ex.Message}"); }
+  }
+
+  private static void ClearCurrentConsoleLine()
+  {
+    int currentLineCursor = Console.CursorTop;
+    Console.SetCursorPosition(0, Console.CursorTop);
+    Console.Write(new string(' ', Console.WindowWidth - 1));
+    Console.SetCursorPosition(0, currentLineCursor);
+  }
+
+  private static void PrintSentMessage(string message)
+  {
+    lock (ConsoleLock)
+    {
+      int targetLine = Math.Max(0, Console.CursorTop - 1);
+      Console.SetCursorPosition(0, targetLine);
+      Console.Write(new string(' ', Console.WindowWidth - 1));
+      Console.SetCursorPosition(0, targetLine);
+      Console.WriteLine($"           {message}");
+    }
+  }
+
+  private static void PrintReceivedMessage(string message)
+  {
+    lock (ConsoleLock)
+    {
+      Console.Write("\r" + new string(' ', Console.WindowWidth - 1) + "\r");
+      Console.WriteLine(message);
+      Console.Write("> ");
+    }
   }
 }
