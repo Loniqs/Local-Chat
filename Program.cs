@@ -7,37 +7,34 @@ internal class Program
   private static readonly object ConsoleLock = new();
   private static IPEndPoint? serverEP = null;
   private static string userName = "username";
-  private const int ServerPort = 8010;
 
   static async Task Main()
   {
     Console.Write("Введите свой ник: ");
     userName = Console.ReadLine() ?? "username";
 
-    using UdpClient client = new();
-    client.EnableBroadcast = true;
-
-    Console.WriteLine("Поиск сервера в локальной сети..");
-
-    byte[] discoverMsg = Encoding.UTF8.GetBytes("DISCOVER");
-    await client.SendAsync(discoverMsg, discoverMsg.Length, new IPEndPoint(IPAddress.Broadcast, ServerPort));
-
-    Task<UdpReceiveResult>? receiveTask = client.ReceiveAsync();
-    Task? timeoutTask = Task.Delay(1500);
-    Task? completedTask = await Task.WhenAny(receiveTask, timeoutTask);
-
-    if (completedTask == receiveTask)
+    while (true)
     {
-      UdpReceiveResult result = await receiveTask;
-      serverEP = result.RemoteEndPoint;
-      Console.WriteLine($"Сервер найден: {serverEP}");
+      Console.Write("Введите IP-адрес сервера: ");
+      string? ipInput = Console.ReadLine();
+
+      if (string.IsNullOrWhiteSpace(ipInput))
+      {
+        ipInput = "127.0.0.1";
+      }
+
+      if (IPAddress.TryParse(ipInput, out IPAddress? ipAddress))
+      {
+        serverEP = new IPEndPoint(ipAddress, 8010);
+        break;
+      }
+      else
+      {
+        Console.WriteLine("Ошибка: неверный формат IP-адреса");
+      }
     }
-    else
-    {
-      serverEP = new IPEndPoint(IPAddress.Loopback, ServerPort);
-      Console.WriteLine("Широковещательный поиск не удался");
-      Console.WriteLine($"Пробуем подключиться к локальному серверу: {serverEP}");
-    }
+
+    using UdpClient client = new UdpClient();
 
     using CancellationTokenSource cts = new();
     Task receiveLoopTask = ReceiveLoop(client, cts.Token);
