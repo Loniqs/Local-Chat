@@ -34,13 +34,14 @@ internal class Program
       }
     }
 
-    using UdpClient client = new UdpClient();
+    using UdpClient client = new(0);
 
     using CancellationTokenSource cts = new();
-    Task receiveLoopTask = ReceiveLoop(client, cts.Token);
 
     Console.Clear();
     Console.WriteLine($"=== С подключением {userName} ===");
+
+    Task receiveLoopTask = ReceiveLoop(client, cts.Token);
 
     string joinMsg = $"JOIN:{userName}";
     byte[] joinBytes = Encoding.UTF8.GetBytes(joinMsg);
@@ -101,7 +102,8 @@ internal class Program
     {
       int targetLine = Math.Max(0, Console.CursorTop - 1);
       Console.SetCursorPosition(0, targetLine);
-      Console.Write(new string(' ', Console.WindowWidth - 1));
+      int width = Math.Max(1, Console.WindowWidth - 1);
+      Console.Write(new string(' ', width));
       Console.SetCursorPosition(0, targetLine);
       Console.WriteLine($"           {message}");
     }
@@ -111,7 +113,8 @@ internal class Program
   {
     lock (ConsoleLock)
     {
-      Console.Write("\r" + new string(' ', Console.WindowWidth - 1) + "\r");
+      int width = Math.Max(1, Console.WindowWidth - 1);
+      Console.Write("\r" + new string(' ', width) + "\r");
       Console.WriteLine(message);
       Console.Write("> ");
     }
