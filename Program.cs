@@ -6,6 +6,14 @@ internal class Program
   private static readonly object ConsoleLock = new();
   static async Task Main()
   {
+    Console.Write("Введите свой ник: ");
+    string? nickname = Console.ReadLine();
+
+    if (string.IsNullOrEmpty(nickname))
+    {
+      nickname = "username";
+    }
+
     Console.Write("Введите IP собеседника: ");
     string? targetIp = Console.ReadLine();
 
@@ -74,7 +82,7 @@ internal class Program
           ClearCurrentConsoleLine();
 
           string time = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
-          Console.WriteLine($"[{time}] u: {command}");
+          Console.WriteLine($"[{time}] {nickname}: {command}");
         }
       }
       catch (OperationCanceledException) { break; }
