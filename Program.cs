@@ -39,7 +39,6 @@ internal class Program
     using CancellationTokenSource cts = new();
 
     Console.Clear();
-    Console.WriteLine($"=== С подключением {userName} ===");
 
     Task receiveLoopTask = ReceiveLoop(client, cts.Token);
 
@@ -52,7 +51,13 @@ internal class Program
       Console.Write("> ");
       string? message = Console.ReadLine();
 
-      if (message == "exit") break;
+      if (message == "exit")
+      {
+        string leaveMsg = $"LEAVE:{userName}";
+        byte[] leaveBytes = Encoding.UTF8.GetBytes(leaveMsg);
+        await client.SendAsync(leaveBytes, leaveBytes.Length, serverEP);
+        break;
+      }
       if (string.IsNullOrEmpty(message)) continue;
 
       string formattedMessage = $"{userName}: {message}";
@@ -79,7 +84,7 @@ internal class Program
         UdpReceiveResult receivedData = await client.ReceiveAsync(ct);
         string message = Encoding.UTF8.GetString(receivedData.Buffer);
 
-        if (message == "SERVER_HERE" || message == "DISCOVER" || message.StartsWith("JOIN:")) continue;
+        if (message.StartsWith("JOIN:") || message.StartsWith("LEAVE:")) continue;
 
         PrintReceivedMessage(message);
       }
